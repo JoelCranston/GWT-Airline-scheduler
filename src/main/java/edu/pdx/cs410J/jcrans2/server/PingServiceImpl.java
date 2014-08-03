@@ -2,8 +2,8 @@ package edu.pdx.cs410J.jcrans2.server;
 
 import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 import edu.pdx.cs410J.AbstractAirline;
-import edu.pdx.cs410J.jcrans2.client.Airline;
-import edu.pdx.cs410J.jcrans2.client.Flight;
+import edu.pdx.cs410J.jcrans2.client.TestAirline;
+import edu.pdx.cs410J.jcrans2.client.TestFlight;
 import edu.pdx.cs410J.jcrans2.client.PingService;
 
 /**
@@ -13,8 +13,8 @@ public class PingServiceImpl extends RemoteServiceServlet implements PingService
 {
     public AbstractAirline ping()
     {
-        Airline airline = new Airline();
-        airline.addFlight( new Flight() );
+        TestAirline airline = new TestAirline();
+        airline.addFlight( new TestFlight() );
         return airline;
     }
 }
