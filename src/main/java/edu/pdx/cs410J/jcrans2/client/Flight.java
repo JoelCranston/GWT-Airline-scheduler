@@ -6,9 +6,8 @@
  */
 package edu.pdx.cs410J.jcrans2.client;
 
+import com.google.gwt.i18n.client.DateTimeFormat;
 import edu.pdx.cs410J.AbstractFlight;
-import java.text.DateFormat;
-import java.text.ParseException;
 import java.util.Date;
 
 /**
@@ -23,7 +22,8 @@ public class Flight extends AbstractFlight implements Comparable<AbstractFlight>
     private final String destination;
     private Date arrivalTime;
     private Date departureTime;
-    private final DateFormat shortDateTime;
+    //private final DateTimeFormat shortDate;
+    private final DateTimeFormat shortDateTime;
 
     /**
      * Creates an instance of flight
@@ -36,7 +36,17 @@ public class Flight extends AbstractFlight implements Comparable<AbstractFlight>
         flightNumber = number;
         source = src;
         destination = dest;
-        shortDateTime = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT);
+        //shortDate = DateTimeFormat.getFormat(PredefinedFormat.DATE_TIME_SHORT );//.getShortDateTimeFormat();//getFormat("MM/DD/yy h:mm a");
+        shortDateTime = DateTimeFormat.getFormat("MM/dd/yyyy 'at' h:mm a");
+    }
+
+    public Flight(int number, String src, String dest, Date depart, Date arrive) {
+        flightNumber = number;
+        source = src;
+        destination = dest;
+        this.departureTime = depart;
+        this.arrivalTime = arrive;
+        shortDateTime = DateTimeFormat.getFormat("MM/dd/yyyy 'at' h:mm a");
     }
 
     /**
@@ -111,9 +121,8 @@ public class Flight extends AbstractFlight implements Comparable<AbstractFlight>
     /**
      * Sets the flights departure time and date string
      * @param dateString A string containing a date and time.
-     * @throws java.text.ParseException
      */
-    public void setDepartureTime(String dateString) throws ParseException {
+    public void setDepartureTime(String dateString) throws IllegalArgumentException {
 
         Date date = shortDateTime.parse(dateString);
         departureTime = date;
@@ -130,10 +139,8 @@ public class Flight extends AbstractFlight implements Comparable<AbstractFlight>
      * Sets the flights arrival time and date
      *
      * @param dateString
-     * @throws java.text.ParseException
-     *         if the date and time can not be parsed.
      */
-    public void setArrivalTime(String dateString) throws ParseException {
+    public void setArrivalTime(String dateString) throws IllegalArgumentException {
         
         Date date = shortDateTime.parse(dateString);
         arrivalTime = date;

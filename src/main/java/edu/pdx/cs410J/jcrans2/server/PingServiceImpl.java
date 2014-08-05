@@ -11,6 +11,7 @@ import edu.pdx.cs410J.jcrans2.client.PingService;
  */
 public class PingServiceImpl extends RemoteServiceServlet implements PingService
 {
+    @Override
     public AbstractAirline ping()
     {
         TestAirline airline = new TestAirline();
