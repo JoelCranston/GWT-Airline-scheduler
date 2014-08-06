@@ -1,7 +1,6 @@
-package edu.pdx.cs410J.jcrans2.server;
+package edu.pdx.cs410J.jcrans2.client;
 import edu.pdx.cs410J.AbstractAirline;
 import edu.pdx.cs410J.AbstractFlight;
-import java.io.Serializable;
 import java.util.Collection;
 import java.util.Set;
 import java.util.TreeSet;
@@ -10,21 +9,20 @@ import java.util.TreeSet;
  * consists of multiple flights.
  * @author joel
  */
-public class Airline extends AbstractAirline implements Serializable {
-    private final String name;
+public class Airline extends AbstractAirline {
+    private String name;
     /**
      * This Collection only contains AbstractFlight objects.
      * @gwt.typeArgs <edu.pdx.cs410J.AbstractFlight>
      */
-    private final Set<AbstractFlight> flights;
+    private Set<AbstractFlight> flights = new TreeSet();
+    
     public Airline(){
-        flights = new TreeSet();
-        name = "NotWorking";
+        this.name = "NotWorking";
     }
     
     public Airline(String name){
         this.name = name;
-        flights = new TreeSet();
     }
     
     /**
@@ -56,7 +54,7 @@ public class Airline extends AbstractAirline implements Serializable {
      */
     @Override
     public Collection getFlights() {
-        return flights;
+        return this.flights;
     }
     
 }

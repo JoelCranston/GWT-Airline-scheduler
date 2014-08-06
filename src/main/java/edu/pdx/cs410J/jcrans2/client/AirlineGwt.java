@@ -136,6 +136,17 @@ public class AirlineGwt implements EntryPoint {
 
             @Override
             public void onFailure(Throwable caught) {
+                final BasicPopup popup = new BasicPopup("<font size=\"4\" color=\"black\">"
+                        + "An Error Ocurred retrieving the Airline Names from the Server.</font>");
+                popup.setGlassEnabled(true);
+                popup.setPopupPositionAndShow(new PopupPanel.PositionCallback() {
+                    @Override
+                    public void setPosition(int offsetWidth, int offsetHeight) {
+                        int left = (Window.getClientWidth() - offsetWidth) / 3;
+                        int top = (Window.getClientHeight() - offsetHeight) / 3;
+                        popup.setPopupPosition(left, top);
+                    }
+                });
                 airlines = new HashSet();//make an empty set 
                 setupMainPanel();
             }
@@ -147,25 +158,55 @@ public class AirlineGwt implements EntryPoint {
             }
             @Override
             public void onFailure(Throwable caught) {
-                //lblServerReply.setText("Communication failed"); ==============TODO: notify of error.
-                //since setCurrentAirline is not call the user will not be able to continue, but can try again.
-               
+                final BasicPopup popup = new BasicPopup("<font size=\"4\" color=\"black\">"
+                        + "An Error Ocurred retrieving the Airline's Flights from the server,<br>"
+                        + "Please try again.</font>");
+                popup.setGlassEnabled(true);
+                popup.setPopupPositionAndShow(new PopupPanel.PositionCallback() {
+                    @Override
+                    public void setPosition(int offsetWidth, int offsetHeight) {
+                        int left = (Window.getClientWidth() - offsetWidth) / 3;
+                        int top = (Window.getClientHeight() - offsetHeight) / 3;
+                        popup.setPopupPosition(left, top);
+                    }
+                });
             }
         };
         this.addFlightAsync = new AsyncCallback<Boolean>() {
             @Override
             public void onSuccess(Boolean result) {
-                if(result){
+                if (result) {
                     //do nothing, everything is ok.
-                }else{
-                    //==========================================================TODO inform of error. airline does not exist on server.
+                } else {
+                    final BasicPopup popup = new BasicPopup("<font size=\"4\" color=\"black\">"
+                            + "An Error Ocurred retrieving while sending the flight to "
+                            + "the server,<br>The specified Airline did not exist.</font>");
+                    popup.setGlassEnabled(true);
+                    popup.setPopupPositionAndShow(new PopupPanel.PositionCallback() {
+                        @Override
+                        public void setPosition(int offsetWidth, int offsetHeight) {
+                            int left = (Window.getClientWidth() - offsetWidth) / 3;
+                            int top = (Window.getClientHeight() - offsetHeight) / 3;
+                            popup.setPopupPosition(left, top);
+                        }
+                    });
                     //maybe call getAirline ????
                 }
             }
             @Override
             public void onFailure(Throwable caught) {
-                //==============================================================TODO: inform of error. Flight was not registered
-                //lblServerReply.setText("Communication failed");
+                final BasicPopup popup = new BasicPopup("<font size=\"4\" color=\"black\">"
+                        + "An error occurred while updating the server flight database,"
+                        + "<br> your flight was not saved to the server.</font>");
+                popup.setGlassEnabled(true);
+                popup.setPopupPositionAndShow(new PopupPanel.PositionCallback() {
+                    @Override
+                    public void setPosition(int offsetWidth, int offsetHeight) {
+                        int left = (Window.getClientWidth() - offsetWidth) / 3;
+                        int top = (Window.getClientHeight() - offsetHeight) / 3;
+                        popup.setPopupPosition(left, top);
+                    }
+                });
             }
         };
     }
@@ -208,10 +249,10 @@ public class AirlineGwt implements EntryPoint {
                 String name = airlineNameTextBox.getText();
                 if (name.contentEquals("") || name.contentEquals("Enter Name")) {
                     //longer help message incase they just pressed continue.
-                    selectAirlineLabel.setText("Create a new airline by entering the name and pressing Continue");
+                    selectAirlineLabel.setText("Create a new airline by entering the name and pressing continue");
                     return; ///exit without generating callback
                 } else {
-                    //airlineService.getAirline(name, getAirlineAsync);// call set current Airline.  =====================TESTING==========
+                    airlineService.getAirline(name, getAirlineAsync);// call set current Airline. 
                     //is a set so we dont have to worry about duplicates.
                     airlines.add(name); 
                     //reset the text box.
@@ -393,7 +434,7 @@ public class AirlineGwt implements EntryPoint {
                     flightsTabPanel.setVisible(false);
                 } else {
                     //set the airline to the name in the list box
-                    //airlineService.getAirline(selectAirlineListBox.getItemText(index), getAirlineAsync); =========================TESTING
+                    airlineService.getAirline(selectAirlineListBox.getItemText(index), getAirlineAsync);
                 }
             }
         });
@@ -502,6 +543,7 @@ public class AirlineGwt implements EntryPoint {
      */
     private void setCurrentAirline(AbstractAirline airline) {
         currentAirlineName = airline.getName();
+        currentAirline = airline;
         //sets List box to new airline adding entry if needed.
         setListBox(selectAirlineListBox, currentAirlineName);
            
@@ -542,13 +584,16 @@ public class AirlineGwt implements EntryPoint {
      * @return true if name was all ready present, false if it was added.
      */
     private Boolean setListBox(ListBox widget, String name) {
-        for (int i = 1; i < widget.getItemCount(); i++) {
+        int i = 1;
+        for (; i < widget.getItemCount(); i++) {
             if (widget.getItemText(i).equals(name)) {
                 widget.setSelectedIndex(i);
                 return true;
             }
         }
         widget.addItem(name);
+        widget.setSelectedIndex(i);
+        
         return false;
     }
 
@@ -637,7 +682,11 @@ public class AirlineGwt implements EntryPoint {
 
     // loads the table with all the flights in the current Airline
     private void getAllFlights() {
-        allFlightTable.setRowData(0, new ArrayList(currentAirline.getFlights()));
+        if(currentAirline != null){
+            allFlightTable.setRowData(0, new ArrayList(currentAirline.getFlights()));
+        }else{
+            System.err.println("ERR: Current Airline Was NULL");               ////////////DEBUG//////////////
+        }
     }
 
     private void filterFlights() {
@@ -680,17 +729,21 @@ public class AirlineGwt implements EntryPoint {
      * @return the HTML formated string containing the flight information.
      */
     private String getFlightDetails(Flight flight) {
-
+        //DateTimeFormat dateFormat = DateTimeFormat.getFormat("MM/dd/yyyy 'at' h:mm a");
+        DateTimeFormat dateFormat = DateTimeFormat.getFormat("EEE, MMM d, yyyy 'at' h:mm a");
+        //String depart = dateFormat.format(flight.getDeparture());
+        //String arrive = dateFormat.format(flight.getArrival());
+                
         StringBuilder sb = new StringBuilder("<font size=\"3\" color=\"black\"> Flight Number ");
         sb.append(flight.getNumber());
         sb.append(":<br>  Departs ");
         sb.append(AirportNames.getName(flight.getSource()));
         sb.append(" on ");
-        sb.append(flight.getDepartureString());
+        sb.append(dateFormat.format(flight.getDeparture()));
         sb.append("<br>  Arrives at ");
         sb.append(AirportNames.getName(flight.getDestination()));
         sb.append(" on ");
-        sb.append((flight.getArrivalString()));
+        sb.append(dateFormat.format(flight.getArrival()));
         sb.append("<br>  Total flight time is ");
         sb.append(getFlightTime(flight));
         sb.append(".<font>");

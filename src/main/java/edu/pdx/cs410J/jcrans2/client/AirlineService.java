@@ -19,6 +19,6 @@ import java.util.Set;
 public interface AirlineService extends RemoteService {
     public Set<String> getAirlineNames();
     public Boolean addFlight(String airlineName, Flight flight);
-    //public AbstractAirline getAirline(String name);
+    public AbstractAirline getAirline(String name);
     
 }

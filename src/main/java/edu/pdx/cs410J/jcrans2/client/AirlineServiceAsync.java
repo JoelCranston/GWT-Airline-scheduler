@@ -18,5 +18,5 @@ public interface AirlineServiceAsync {
 
     public void getAirlineNames(AsyncCallback<Set<String>> callback);
     public void addFlight(String airlineName, Flight flight, AsyncCallback<Boolean> callback);
-    //public void getAirline(String name,AsyncCallback<AbstractAirline> callback);
+    public void getAirline(String name,AsyncCallback<AbstractAirline> callback);
 }

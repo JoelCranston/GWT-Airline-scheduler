@@ -6,7 +6,7 @@
  */
 package edu.pdx.cs410J.jcrans2.client;
 
-import com.google.gwt.i18n.client.DateTimeFormat;
+//import com.google.gwt.i18n.client.DateTimeFormat;
 import edu.pdx.cs410J.AbstractFlight;
 import java.io.Serializable;
 import java.util.Date;
@@ -18,14 +18,18 @@ import java.util.Date;
  */
 public class Flight extends AbstractFlight implements Comparable<AbstractFlight>, Serializable {
 
-    private final Integer flightNumber;
-    private final String source;
-    private final String destination;
+    private Integer flightNumber;
+    private String source;
+    private String destination;
     private Date arrivalTime;
     private Date departureTime;
     //private final DateTimeFormat shortDate;
-    private final transient DateTimeFormat shortDateTime = DateTimeFormat.getFormat("MM/dd/yyyy 'at' h:mm a");
-
+    //private static final transient DateTimeFormat shortDateTime = DateTimeFormat.getFormat("MM/dd/yyyy 'at' h:mm a");
+    public Flight(){
+        flightNumber = 0;
+        source = "null";
+        destination = "null";        
+    }
     /**
      * Creates an instance of flight
      *
@@ -101,7 +105,7 @@ public class Flight extends AbstractFlight implements Comparable<AbstractFlight>
     @Override
     public String getDepartureString() {
         
-        return shortDateTime.format(departureTime);
+        return departureTime.toString();
     }
 
     /**
@@ -122,18 +126,19 @@ public class Flight extends AbstractFlight implements Comparable<AbstractFlight>
      */
     @Override
     public String getArrivalString() {
-        return shortDateTime.format(arrivalTime);
+        return arrivalTime.toString();
+        //return shortDateTime.format(arrivalTime);
     }
 
-    /**
-     * Sets the flights departure time and date string
-     * @param dateString A string containing a date and time.
-     */
-    public void setDepartureTime(String dateString) throws IllegalArgumentException {
-
-        Date date = shortDateTime.parse(dateString);
-        departureTime = date;
-    }
+//    /**
+//     * Sets the flights departure time and date string
+//     * @param dateString A string containing a date and time.
+//     */
+//    public void setDepartureTime(String dateString) throws IllegalArgumentException {
+//
+//        Date date = shortDateTime.parse(dateString);
+//        departureTime = date;
+//    }
      /**
      * Sets the flights departure time and date using Date object
      *
@@ -143,16 +148,16 @@ public class Flight extends AbstractFlight implements Comparable<AbstractFlight>
         departureTime = date;
     }
     /**
-     * Sets the flights arrival time and date
-     *
-     * @param dateString
-     */
-    public void setArrivalTime(String dateString) throws IllegalArgumentException {
-        
-        Date date = shortDateTime.parse(dateString);
-        arrivalTime = date;
-
-    }
+//     * Sets the flights arrival time and date
+//     *
+//     * @param dateString
+//     */
+//    public void setArrivalTime(String dateString) throws IllegalArgumentException {
+//        
+//        Date date = shortDateTime.parse(dateString);
+//        arrivalTime = date;
+//
+//    }
      /**
      * Sets the flights arrival time and date using Date object
      *
