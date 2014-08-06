@@ -1,27 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app    xmlns="http://java.sun.com/xml/ns/j2ee"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-            xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd"
-            version="2.4">
+<web-app version="2.4" xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd">
     <!-- Servlets -->
     <servlet>
-        <servlet-name>pingServlet</servlet-name>
-        <servlet-class>edu.pdx.cs410J.jcrans2.server.PingServiceImpl</servlet-class>
-    </servlet>
-    <servlet>
         <servlet-name>AirlineServlet</servlet-name>
-        <servlet-class>edu.pdx.cs410J.jcrans2.server.AirlineServlet</servlet-class>
+        <servlet-class>edu.pdx.cs410J.jcrans2.server.AirlineServiceImpl</servlet-class>
     </servlet>
-
-    <servlet-mapping>
-        <servlet-name>pingServlet</servlet-name>
-        <url-pattern>/airline/ping</url-pattern>
-    </servlet-mapping>
     <servlet-mapping>
         <servlet-name>AirlineServlet</servlet-name>
         <url-pattern>/airline/flights</url-pattern>
     </servlet-mapping>
-
     <!-- Default page to serve -->
     <welcome-file-list>
         <welcome-file>AirlineGwt.html</welcome-file>

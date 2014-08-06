@@ -35,12 +35,13 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 import com.google.gwt.user.datepicker.client.DateBox;
 import com.google.gwt.view.client.ListDataProvider;
 import edu.pdx.cs410J.AbstractAirline;
-import edu.pdx.cs410J.AbstractFlight;
 import edu.pdx.cs410J.AirportNames;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * A basic GWT class that makes sure that we can send an airline back from the
@@ -68,7 +69,7 @@ public class AirlineGwt implements EntryPoint {
     private SuggestBox destFilterBox;
 
     //airline name
-    private final Button selectButton;
+    private final Button createAirlineButton;
     private ListBox selectAirlineListBox;
     private final TextBox airlineNameTextBox;
     private final Label selectAirlineLabel;
@@ -76,10 +77,15 @@ public class AirlineGwt implements EntryPoint {
     //menu
     private final MenuBar menu;
     private final MenuBar helpMenu;
-    private MenuItem readmeMenuItem;
-
+    private final MenuItem readmeMenuItem;
+    
+    //callbacks
+    AirlineServiceAsync airlineService;
+    final AsyncCallback<Set<String>> getAirlineNamesAsync;
+    final AsyncCallback<AbstractAirline> getAirlineAsync;
+    final AsyncCallback<Boolean> addFlightAsync;
     //DATA
-    private List<String> airlines;
+    private Set<String> airlines;
     private String currentAirlineName;
     private AbstractAirline currentAirline;
     CellTable<Flight> allFlightTable;
@@ -90,110 +96,23 @@ public class AirlineGwt implements EntryPoint {
             = "<title>README</title><font size=\"5\" color=\"black\">CS410J Project5</font><br>"
             + "<font size=\"3\">A GWT web application that creates and displays airlines and their flights.<br>"
             + "Author: Joel Cranston<br></font>";
-
+    /**
+     * Constructor for AirlineGwt
+     */
     public AirlineGwt() {
         this.helpMenu = new MenuBar(true);
         this.menu = new MenuBar();
         this.selectAirlineLabel = new Label("Select an exiting airline or create a new one");
-        //this.flightPanel = new HorizontalPanel();
         this.airlineNameTextBox = new TextBox();
         this.airlineNameTextBox.setText("Enter Name");
-        this.selectButton = new Button("Continue");
+        this.createAirlineButton = new Button("Continue");
         this.mainPanel = new VerticalPanel();
         this.flightsTabPanel = new TabLayoutPanel(1.5, Unit.EM);
         this.addFlightTab = new VerticalPanel();
         this.filterFlightTab = new VerticalPanel();
         this.allFlightTab = new ScrollPanel();
         this.noFlights = new Label("No flights Found");
-        //flightTable = new CellTable<Flight>();
-
-    }
-
-    private static class BasicPopup extends PopupPanel {
-
-        public BasicPopup(String text) {
-            super(true);//autohide
-            setWidget(new HTML(text));
-        }
-    }
-
-    @Override
-    public void onModuleLoad() {
-        //get list of airlines from server
-        airlines = getAirlineNames();
-
-        Button button = new Button("Ping Server");
-        button.addClickHandler(new ClickHandler() {
-            @Override
-            public void onClick(ClickEvent clickEvent) {
-                PingServiceAsync async = GWT.create(PingService.class);
-                async.ping(new AsyncCallback<AbstractAirline>() {
-
-                    @Override
-                    public void onFailure(Throwable ex) {
-                        Window.alert(ex.toString());
-                    }
-
-                    @Override
-                    public void onSuccess(AbstractAirline airline) {
-                        StringBuilder sb = new StringBuilder(airline.toString());
-                        Collection<AbstractFlight> flights = airline.getFlights();
-                        for (AbstractFlight flight : flights) {
-                            sb.append(flight);
-                            sb.append("\n");
-                        }
-                        Window.alert(sb.toString());
-                    }
-                });
-            }
-        });
-        selectButton.addClickHandler(new ClickHandler() {
-            @Override
-            public void onClick(ClickEvent event) {
-                int selected = selectAirlineListBox.getSelectedIndex();
-
-                if (selected == 0) {
-                    String name = airlineNameTextBox.getText();
-                    //check database to insure no duplicates.
-                    if (name.contentEquals("") || name.contentEquals("Enter Name")) {
-                        //longer help message incase they just press continue.
-                        selectAirlineLabel.setText("Create a new airline by entering the name and pressing Continue");
-                    } else {
-                        //check to see if it already exists
-                        for (String s : airlines) {
-                            if (s.equalsIgnoreCase(name)) {
-                                setCurrentAirline(s);//removes both the select box and continue buttons
-                                return;
-
-                            }
-                        }
-                        //create new airline if not existant and set it to current.
-                        createNewAirline(name);
-                        setCurrentAirline(name);
-                    }
-                } else {
-                    setCurrentAirline(selectAirlineListBox.getItemText(selected));
-                }
-            }
-        });
-        selectAirlineListBox = airlineNameList();
-        selectAirlineListBox.addChangeHandler(new ChangeHandler() {
-            @Override
-            public void onChange(ChangeEvent event) {
-                int index = selectAirlineListBox.getSelectedIndex();
-                //unhide add airline widgets if "create new" is selected.
-                if (index == 0) {
-                    airlineNameTextBox.setVisible(true);
-                    selectButton.setVisible(true);
-                    selectAirlineLabel.setText("Create a new airline by entering the name and pressing continue");
-                    flightsTabPanel.setVisible(false);
-                } else {
-                    //set the airline.
-                    setCurrentAirline(selectAirlineListBox.getItemText(index));
-                }
-            }
-        });
-        readmeMenuItem = new MenuItem("readme", false, new Command() {
+        this.readmeMenuItem = new MenuItem("readme", false, new Command() {
             @Override
             public void execute() {
                 final BasicPopup popup = new BasicPopup(README);
@@ -206,6 +125,99 @@ public class AirlineGwt implements EntryPoint {
                         popup.setPopupPosition(left, top);
                     }
                 });
+            }
+        });
+        this.getAirlineNamesAsync = new AsyncCallback<Set<String>>() {
+            @Override
+            public void onSuccess(Set<String> names) {
+                airlines = names;
+                setupMainPanel();
+            }
+
+            @Override
+            public void onFailure(Throwable caught) {
+                airlines = new HashSet();//make an empty set 
+                setupMainPanel();
+            }
+        };
+        this.getAirlineAsync = new AsyncCallback<AbstractAirline>() {
+            @Override
+            public void onSuccess(AbstractAirline result) {
+                setCurrentAirline(result);
+            }
+            @Override
+            public void onFailure(Throwable caught) {
+                //lblServerReply.setText("Communication failed"); ==============TODO: notify of error.
+                //since setCurrentAirline is not call the user will not be able to continue, but can try again.
+               
+            }
+        };
+        this.addFlightAsync = new AsyncCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean result) {
+                if(result){
+                    //do nothing, everything is ok.
+                }else{
+                    //==========================================================TODO inform of error. airline does not exist on server.
+                    //maybe call getAirline ????
+                }
+            }
+            @Override
+            public void onFailure(Throwable caught) {
+                //==============================================================TODO: inform of error. Flight was not registered
+                //lblServerReply.setText("Communication failed");
+            }
+        };
+    }
+    /**
+     * Sets up the mainPanel 
+     */
+    private void setupMainPanel() {
+        setupAirlinesListBox();//using empty set
+        mainPanel.add(selectAirlineLabel);
+        mainPanel.add(selectAirlineListBox);
+        mainPanel.add(airlineNameTextBox);
+        mainPanel.add(createAirlineButton);
+        mainPanel.add(flightsTabPanel);
+        mainPanel.setVisible(true);
+    }
+    /**
+     * Class for creation of a popup that can be passed text to be displayed in HTML.
+     */
+    private static class BasicPopup extends PopupPanel {
+        /**
+         * Constructor for a basic popup.
+         * @param text Text to be interpreted as HTML
+         */
+        public BasicPopup(String text) {
+            super(true);//autohide
+            setWidget(new HTML(text));
+        }
+    }
+
+    @Override
+    public void onModuleLoad() {
+        airlineService = GWT.create(AirlineService.class);
+        
+        //====================================================================//
+        //                       Select Button
+        //====================================================================//
+        createAirlineButton.addClickHandler(new ClickHandler() {
+            @Override
+            public void onClick(ClickEvent event) {
+                String name = airlineNameTextBox.getText();
+                if (name.contentEquals("") || name.contentEquals("Enter Name")) {
+                    //longer help message incase they just pressed continue.
+                    selectAirlineLabel.setText("Create a new airline by entering the name and pressing Continue");
+                    return; ///exit without generating callback
+                } else {
+                    //airlineService.getAirline(name, getAirlineAsync);// call set current Airline.  =====================TESTING==========
+                    //is a set so we dont have to worry about duplicates.
+                    airlines.add(name); 
+                    //reset the text box.
+                    airlineNameTextBox.setText("Enter Name");
+                }
+
             }
         });
 
@@ -262,10 +274,12 @@ public class AirlineGwt implements EntryPoint {
         addFlightButton.addClickHandler(new ClickHandler() {
             @Override
             public void onClick(ClickEvent event) {
-                addFlight();
+                Flight f = addFlight();
+                //if flight was created update the server
+                if(f != null){
+                    airlineService.addFlight(currentAirlineName,f,addFlightAsync);
+                }            
             }
-        ;
-
         });
 
         addFlightTab.add(numberLabel);
@@ -298,8 +312,6 @@ public class AirlineGwt implements EntryPoint {
             public void onClick(ClickEvent event) {
                 filterFlights();
             }
-        ;
-
         });
         airportFilterPanel.add(srcFilterBox);
         airportFilterPanel.setCellWidth(srcFilterBox, "300px");
@@ -320,27 +332,78 @@ public class AirlineGwt implements EntryPoint {
         flightsTabPanel.add(allFlightTab, "All Flights");
         flightsTabPanel.add(filterFlightTab, "Flights by Airport");
         flightsTabPanel.add(addFlightTab, "Add a Flight");
-
         flightsTabPanel.setPixelSize(800, 600);
 
-        RootPanel rootPanel = RootPanel.get();
-        menu.addItem("Help", helpMenu);
+        //====================================================================//
+        
+        //menu
+        //readmeMenuItem setup in constructor.
         helpMenu.addItem(readmeMenuItem);
-        rootPanel.add(menu);
+        menu.addItem("Help", helpMenu);
+        
+        
+
+
+        //mainPanel needs to be hidden until server callback is called.
+        mainPanel.setVisible(false);
+        
+        //get list of airlines from server
+
+        airlineService.getAirlineNames(getAirlineNamesAsync);
+                    //callback should: 
+                    //  on failure:
+                    //      notify user that database was not accessed.
+                    //  on success or failure:
+                    //      Add widgets to mainPanel
+                    //      call setupAirlinesListBox() as it need a list of airlines.
+                    //      sets mainPanel to visable. so user can interact.
+        
+        
+        //Root Panel
+        RootPanel rootPanel = RootPanel.get();
+        rootPanel.add(menu); 
         rootPanel.add(mainPanel);
-        //mainPanel.setWidth("800px");
-        //mainPanel.setPixelSize(800, 800);
-        mainPanel.add(selectAirlineLabel);
-        mainPanel.add(selectAirlineListBox);
-        mainPanel.add(airlineNameTextBox);
-        mainPanel.add(selectButton);
-        mainPanel.add(flightsTabPanel);
 
     }
+    //========================================================================//
+    //                       End of OnModule Load
+    //========================================================================//
 
-    // adds a flight to current airline.
+   /**
+    * Creates and sets up a listBox with the airline names.
+    *  *** Depends on airlines being populated ***
+    */
+    private void setupAirlinesListBox() {
 
-    private void addFlight() {
+        selectAirlineListBox = new ListBox();
+        selectAirlineListBox.addItem("Create a new Airline");
+                for (String s : airlines) {
+            selectAirlineListBox.addItem(s);
+        }
+        selectAirlineListBox.addChangeHandler(new ChangeHandler() {
+            @Override
+            public void onChange(ChangeEvent event) {
+                int index = selectAirlineListBox.getSelectedIndex();
+                //unhide add airline widgets if "create new" is selected.
+                if (index == 0) {
+                    airlineNameTextBox.setVisible(true);
+                    createAirlineButton.setVisible(true);
+                    selectAirlineLabel.setText("Create a new airline by entering the name and pressing continue");
+                    selectAirlineLabel.setVisible(true);
+                    flightsTabPanel.setVisible(false);
+                } else {
+                    //set the airline to the name in the list box
+                    //airlineService.getAirline(selectAirlineListBox.getItemText(index), getAirlineAsync); =========================TESTING
+                }
+            }
+        });
+    }
+    
+    
+    /**
+     * Adds a flight to the current airline.
+     */
+    private Flight addFlight() {
 
         //first validate entered information.
         int flightnum;
@@ -359,7 +422,7 @@ public class AirlineGwt implements EntryPoint {
                     popup.setPopupPosition(left, top);
                 }
             });
-            return;
+            return null;
         }
         //check if a valid date was entered.
         if (departDateBox.getValue() == null || arriveDateBox.getValue() == null) {
@@ -375,7 +438,7 @@ public class AirlineGwt implements EntryPoint {
                     popup.setPopupPosition(left, top);
                 }
             });
-            return;
+            return null;
         }
         //check to see if arrival is after departure
         if (departDateBox.getValue().after(arriveDateBox.getValue())) {
@@ -391,7 +454,7 @@ public class AirlineGwt implements EntryPoint {
                     popup.setPopupPosition(left, top);
                 }
             });
-            return;
+            return null;
         }
         //verify src and dest airport codes.
         String src = srcBox.getText().toUpperCase();
@@ -408,7 +471,7 @@ public class AirlineGwt implements EntryPoint {
                     popup.setPopupPosition(left, top);
                 }
             });
-            return;
+            return null;
         }
         ///all test passed so create a flight.
         Flight newFlight = new Flight(flightnum,
@@ -426,35 +489,25 @@ public class AirlineGwt implements EntryPoint {
         //flightsTabPanel.
         // clean up textboxes
         flightNumberBox.setText("");
+        return newFlight;
 
     }
 
-    private ListBox airlineNameList() {
-        ListBox widget = new ListBox();
-        widget.addItem("Create a new Airline");
-        for (String s : airlines) {
-            widget.addItem(s);
-        }
-        return widget;
-    }
-
-    private List<String> getAirlineNames() {
-        List<String> names = new ArrayList<>();
-        names.add("American");
-        names.add("NW");
-        names.add("Alaskan");
-        return names;
-    }
 
     //sets up the application to use the specified airline.
-
-    private void setCurrentAirline(String name) {
-        currentAirlineName = name;
-        setListBox(selectAirlineListBox, name);
-        this.currentAirline = new edu.pdx.cs410J.jcrans2.client.Airline(name); ///demo code need to search database.
+    /**
+     * Sets the programs working airline 
+     * Should be call from a async Callback
+     * @param name name of the airline to use.
+     */
+    private void setCurrentAirline(AbstractAirline airline) {
+        currentAirlineName = airline.getName();
+        //sets List box to new airline adding entry if needed.
+        setListBox(selectAirlineListBox, currentAirlineName);
+           
         //remove the unnessary widgets
         airlineNameTextBox.setVisible(false);
-        selectButton.setVisible(false);
+        createAirlineButton.setVisible(false);
         selectAirlineLabel.setVisible(false);
         //populate the flights tab before displaying it.
         //get new table so the flights from the old will not persist.
@@ -480,29 +533,29 @@ public class AirlineGwt implements EntryPoint {
         flightsTabPanel.setVisible(true);
 
     }
-
-    //sets a list box selection to the item with a specific string
+ 
+    /**
+     * sets a list box selection to the item with a specific string,
+     * It is case sensitive.
+     * @param widget the lListBox
+     * @param name name of item to set to 
+     * @return true if name was all ready present, false if it was added.
+     */
     private Boolean setListBox(ListBox widget, String name) {
         for (int i = 1; i < widget.getItemCount(); i++) {
-            if (widget.getItemText(i).equalsIgnoreCase(name)) {
+            if (widget.getItemText(i).equals(name)) {
                 widget.setSelectedIndex(i);
                 return true;
             }
         }
+        widget.addItem(name);
         return false;
     }
 
-    private void createNewAirline(String name) {
-        //add to names database
-        this.airlines.add(name);
-        //add to listbox
-        selectAirlineListBox.addItem(name);
-        //reset the text box.
-        airlineNameTextBox.setText("Enter Name");
-
-    }
-
-    // creates and configures a cellTable
+    /**
+     * Creates and configures an empty CellTable 
+     * @return the CellTable
+     */
     private CellTable<Flight> setupFlightsTable() {
         CellTable<Flight> flights = new CellTable<>(30);
         //Flight number

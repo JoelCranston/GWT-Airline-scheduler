@@ -5,5 +5,5 @@
   <inherits name="com.google.gwt.i18n.I18N"/>
   <entry-point class="edu.pdx.cs410J.jcrans2.client.AirlineGwt"/>
 
-  <servlet path="/ping" class="edu.pdx.cs410J.jcrans2.server.PingServiceImpl"/>
+  <servlet path="/flights" class="edu.pdx.cs410J.jcrans2.server.AirlineServiceImpl"/>
 </module>

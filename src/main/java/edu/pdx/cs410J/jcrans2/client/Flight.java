@@ -8,6 +8,7 @@ package edu.pdx.cs410J.jcrans2.client;
 
 import com.google.gwt.i18n.client.DateTimeFormat;
 import edu.pdx.cs410J.AbstractFlight;
+import java.io.Serializable;
 import java.util.Date;
 
 /**
@@ -15,7 +16,7 @@ import java.util.Date;
  *
  * @author joel
  */
-public class Flight extends AbstractFlight implements Comparable<AbstractFlight> {
+public class Flight extends AbstractFlight implements Comparable<AbstractFlight>, Serializable {
 
     private final Integer flightNumber;
     private final String source;
@@ -23,7 +24,7 @@ public class Flight extends AbstractFlight implements Comparable<AbstractFlight>
     private Date arrivalTime;
     private Date departureTime;
     //private final DateTimeFormat shortDate;
-    private final DateTimeFormat shortDateTime;
+    private final transient DateTimeFormat shortDateTime = DateTimeFormat.getFormat("MM/dd/yyyy 'at' h:mm a");
 
     /**
      * Creates an instance of flight
@@ -32,21 +33,27 @@ public class Flight extends AbstractFlight implements Comparable<AbstractFlight>
      * @param src the source airport
      * @param dest the destination airport
      */
+    
     public Flight(int number, String src, String dest) {
         flightNumber = number;
         source = src;
         destination = dest;
-        //shortDate = DateTimeFormat.getFormat(PredefinedFormat.DATE_TIME_SHORT );//.getShortDateTimeFormat();//getFormat("MM/DD/yy h:mm a");
-        shortDateTime = DateTimeFormat.getFormat("MM/dd/yyyy 'at' h:mm a");
     }
-
+     /**
+     * Creates an instance of flight
+     *
+     * @param number a unique number
+     * @param src the source airport
+     * @param dest the destination airport
+     * @param depart departure time and date
+     * @param arrive arrival time and date
+     */
     public Flight(int number, String src, String dest, Date depart, Date arrive) {
         flightNumber = number;
         source = src;
         destination = dest;
         this.departureTime = depart;
         this.arrivalTime = arrive;
-        shortDateTime = DateTimeFormat.getFormat("MM/dd/yyyy 'at' h:mm a");
     }
 
     /**
